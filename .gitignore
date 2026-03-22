@@ -1,0 +1,35 @@
+# Build output
+build/
+build_test/
+boot/bootloader.bin
+boot/bootloader.map
+boot/boot.img
+boot/boot.signed
+boot/flash.img
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Object files
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+*.d
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Tools
+tools/keys/*.pem
+tools/keys/*.key
+__pycache__/
+*.pyc

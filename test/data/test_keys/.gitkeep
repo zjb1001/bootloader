@@ -1,0 +1,3 @@
+# Test keys directory
+# Place test RSA/ECDSA key pairs here for unit/integration tests.
+# These keys are FOR TESTING ONLY – never use in production.
