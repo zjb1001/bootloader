@@ -8,6 +8,7 @@
 #include "hal/uart.h"
 #include "config.h"
 #include "types.h"
+#include "errno.h"
 
 /* Console is bound to DEFAULT_UART_ID */
 #define CONSOLE_UART_ID  DEFAULT_UART_ID

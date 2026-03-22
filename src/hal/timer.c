@@ -4,16 +4,35 @@
  *
  * Provides timekeeping services using ARM generic timer.
  */
+#if !defined(__arm__) && !defined(__aarch64__)
+#define _POSIX_C_SOURCE 199309L
+#include <time.h>
+#endif
+
 #include "hal/timer.h"
 #include "platform/platform.h"
 #include "errno.h"
 #include "types.h"
 
 /* ARM Generic Timer register access */
+#if defined(__arm__) || defined(__aarch64__)
 #define cntfrq() ({ uint32_t val; __asm__ volatile("mrc p15, 0, %0, c14, c0, 0" : "=r"(val)); val; })
-#define cntvct() ({ uint64_t val; __asm__ volatile("mrrc p15, 0, %0, %H0, c14" : "=r"(val)); val; })
+#define cntvct() ({ uint64_t val; __asm__ volatile("mrrc p15, 1, %Q0, %R0, c14" : "=r"(val)); val; })
 #define cntkctl() ({ uint32_t val; __asm__ volatile("mrc p15, 0, %0, c14, c1, 0" : "=r"(val)); val; })
 #define cntkctl_write(val) __asm__ volatile("mcr p15, 0, %0, c14, c1, 0" :: "r"(val))
+#else
+/* Host stub - use a simulated frequency */
+static inline uint32_t stub_cntfrq(void) { return 1000000; }
+static inline uint64_t stub_cntvct(void) {
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (uint64_t)ts.tv_sec * 1000000 + (uint64_t)ts.tv_nsec / 1000;
+}
+#define cntfrq() stub_cntfrq()
+#define cntvct() stub_cntvct()
+#define cntkctl() (0u)
+#define cntkctl_write(val) ((void)(val))
+#endif
 
 /* Cached timer frequency */
 static uint32_t s_timer_freq_hz = 0;

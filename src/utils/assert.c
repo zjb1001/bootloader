@@ -55,7 +55,8 @@ void bl_assert_fail(const char *expr, const char *file, int line)
 
     /* Halt if watchdog not available */
     for (;;) {
-        /* Disable interrupts and halt */
+#if defined(__arm__) || defined(__aarch64__)
         __asm__ volatile ("wfi");
+#endif
     }
 }

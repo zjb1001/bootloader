@@ -11,7 +11,7 @@
 #include "types.h"
 
 /* Page table location (aligned to 16KB) */
-static uint32_t s_page_table[4096] __attribute__((aligned(16384)));
+static uint32_t s_page_table[4096] __attribute__((section(".dram_bss"), aligned(16384)));
 
 /* ARMv7-A System Control Register bits */
 #define SCTLR_M      (1u << 0)   /* MMU enable */
@@ -39,10 +39,15 @@ static uint32_t s_page_table[4096] __attribute__((aligned(16384)));
 #define CCSIDR_NUMSETS_MASK   0x7FFFu
 
 /* Co-Processor access */
+#if defined(__arm__) || defined(__aarch64__)
 #define mrc(p, op1, crn, crm, op2, val) \
     __asm__ volatile("mrc p" #p ", " #op1 ", %0, c" #crn ", c" #crm ", " #op2 : "=r"(val))
 #define mcr(p, op1, crn, crm, op2, val) \
     __asm__ volatile("mcr p" #p ", " #op1 ", %0, c" #crn ", c" #crm ", " #op2 :: "r"(val))
+#else
+#define mrc(p, op1, crn, crm, op2, val) do { (val) = 0; } while(0)
+#define mcr(p, op1, crn, crm, op2, val) do { (void)(val); } while(0)
+#endif
 
 /**
  * Read SCTLR
@@ -60,7 +65,9 @@ static inline uint32_t read_sctlr(void)
 static inline void write_sctlr(uint32_t val)
 {
     mcr(15, 0, 1, 0, 0, val);
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile("isb");
+#endif
 }
 
 /**
@@ -79,7 +86,9 @@ static inline uint32_t read_ttbr0(void)
 static inline void write_ttbr0(uint32_t val)
 {
     mcr(15, 0, 2, 0, 0, val);
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile("isb");
+#endif
 }
 
 /**
@@ -87,9 +96,11 @@ static inline void write_ttbr0(uint32_t val)
  */
 static inline void tlbiall(void)
 {
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile("mcr p15, 0, %0, c8, c7, 0" :: "r"(0));
     __asm__ volatile("dsb");
     __asm__ volatile("isb");
+#endif
 }
 
 /**
@@ -126,7 +137,7 @@ int hal_mmu_init(void)
     }
 
     /* Set page table base address */
-    write_ttbr0((uint32_t)s_page_table);
+    write_ttbr0((uint32_t)(uintptr_t)s_page_table);
 
     return E_OK;
 }
@@ -252,9 +263,10 @@ int hal_cache_disable(uint32_t level)
  */
 int hal_cache_flush(uint32_t level)
 {
-    uint32_t csselr, ccsidr, sets, ways, way, set, line_size;
-
     (void)level;  /* Flush all levels */
+
+#if defined(__arm__) || defined(__aarch64__)
+    uint32_t csselr, ccsidr, sets, ways, way, set;
 
     /* Select data cache */
     csselr = 0;
@@ -262,8 +274,7 @@ int hal_cache_flush(uint32_t level)
     __asm__ volatile("isb");
 
     /* Read cache characteristics */
-    mrc(15, 1, 0, c0, c0, ccsidr);
-    line_size = 4 << ((ccsidr >> CCSIDR_LINESIZE_SHIFT) & 0x7);
+    mrc(15, 1, 0, 0, 0, ccsidr);
     sets = ((ccsidr >> CCSIDR_NUMSETS_SHIFT) & CCSIDR_NUMSETS_MASK) + 1;
     ways = ((ccsidr >> CCSIDR_ASSOC_SHIFT) & 0x3FF) + 1;
 
@@ -277,6 +288,7 @@ int hal_cache_flush(uint32_t level)
 
     __asm__ volatile("dsb");
     __asm__ volatile("isb");
+#endif
 
     return E_OK;
 }
@@ -302,10 +314,9 @@ int hal_dram_init(uint32_t dram_size)
  */
 int hal_dram_test(uint32_t start, uint32_t size)
 {
-    volatile uint32_t *ptr = (volatile uint32_t *)start;
+    volatile uint32_t *ptr = (volatile uint32_t *)(uintptr_t)start;
     uint32_t words = size / sizeof(uint32_t);
     uint32_t i;
-    uint32_t expected;
     uint32_t pattern[] = {0x55555555, 0xAAAAAAAA, 0xFFFFFFFF, 0x00000000};
 
     /* Test first and last 1KB */

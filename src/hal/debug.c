@@ -13,7 +13,11 @@
  */
 void hal_debug_breakpoint(void)
 {
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile("bkpt #0");
+#else
+    __builtin_trap();
+#endif
 }
 
 /**
@@ -22,12 +26,34 @@ void hal_debug_breakpoint(void)
 void hal_debug_dump_regs(void)
 {
     uint32_t regs[16];
-    uint32_t cpsr, pc, sp;
 
-    __asm__ volatile("stmia %0, {r0-r15}" : : "r"(regs) : "memory");
-
-    cpsr = regs[15];  /* Actually PC in stmia context */
+#if defined(__arm__)
+    uint32_t cpsr;
+    __asm__ volatile(
+        "str r0,  [%0, #0]\n\t"
+        "str r1,  [%0, #4]\n\t"
+        "str r2,  [%0, #8]\n\t"
+        "str r3,  [%0, #12]\n\t"
+        "str r4,  [%0, #16]\n\t"
+        "str r5,  [%0, #20]\n\t"
+        "str r6,  [%0, #24]\n\t"
+        "str r7,  [%0, #28]\n\t"
+        "str r8,  [%0, #32]\n\t"
+        "str r9,  [%0, #36]\n\t"
+        "str r10, [%0, #40]\n\t"
+        "str r11, [%0, #44]\n\t"
+        "str r12, [%0, #48]\n\t"
+        "str sp,  [%0, #52]\n\t"
+        "str lr,  [%0, #56]\n\t"
+        "mov r0, pc\n\t"
+        "str r0,  [%0, #60]"
+        : : "r"(regs) : "r0", "memory"
+    );
     __asm__ volatile("mrs %0, cpsr" : "=r"(cpsr));
+    (void)cpsr;
+#else
+    for (int i = 0; i < 16; i++) regs[i] = 0;
+#endif
 
     extern int hal_uart_write(uint32_t, const uint8_t *, uint32_t);
 
@@ -90,6 +116,7 @@ void hal_debug_dump_regs(void)
  */
 void hal_debug_set_dcache(int enable)
 {
+#if defined(__arm__) || defined(__aarch64__)
     uint32_t sctlr;
     __asm__ volatile("mrc p15, 0, %0, c1, c0, 0" : "=r"(sctlr));
 
@@ -101,6 +128,9 @@ void hal_debug_set_dcache(int enable)
 
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" :: "r"(sctlr));
     __asm__ volatile("isb");
+#else
+    (void)enable;
+#endif
 }
 
 /**
@@ -108,6 +138,7 @@ void hal_debug_set_dcache(int enable)
  */
 void hal_debug_set_icache(int enable)
 {
+#if defined(__arm__) || defined(__aarch64__)
     uint32_t sctlr;
     __asm__ volatile("mrc p15, 0, %0, c1, c0, 0" : "=r"(sctlr));
 
@@ -119,6 +150,9 @@ void hal_debug_set_icache(int enable)
 
     __asm__ volatile("mcr p15, 0, %0, c1, c0, 0" :: "r"(sctlr));
     __asm__ volatile("isb");
+#else
+    (void)enable;
+#endif
 }
 
 /**
@@ -127,7 +161,11 @@ void hal_debug_set_icache(int enable)
 uint32_t hal_debug_get_cpuid(void)
 {
     uint32_t cpuid;
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile("mrc p15, 0, %0, c0, c0, 0" : "=r"(cpuid));
+#else
+    cpuid = 0;
+#endif
     return cpuid;
 }
 
@@ -137,6 +175,10 @@ uint32_t hal_debug_get_cpuid(void)
 uint32_t hal_debug_get_cache_line_size(void)
 {
     uint32_t ccsidr;
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile("mrc p15, 1, %0, c0, c0, 0" : "=r"(ccsidr));
+#else
+    ccsidr = 0;
+#endif
     return 4 << ((ccsidr >> 0) & 0x7);
 }

@@ -1,6 +1,7 @@
 # ─── ARM Cortex-A cross-compilation toolchain ───
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_PROCESSOR arm)
+set(CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 
 set(CROSS_COMPILE "arm-none-eabi-" CACHE STRING "Cross compiler prefix")
 

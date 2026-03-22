@@ -11,13 +11,17 @@
 /* Chip ID register base (ARMv7-A CP15) */
 #define CHIP_ID_BASE    0x01C20000u
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#if defined(__arm__)
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
+#else
+#define REG32(addr) (0)  /* Stub for host builds */
+#endif
 
 platform_type_t platform_detect(void)
 {
     /* Read CPU ID to determine platform */
+#if defined(__arm__)
     uint32_t cpuid;
-
     __asm__ volatile("mrc p15, 0, %0, c0, c0, 0" : "=r"(cpuid));
 
     /* Extract implementer and architecture */
@@ -29,12 +33,9 @@ platform_type_t platform_detect(void)
             return PLATFORM_ARMV7;
         }
     }
-
-#if defined(__aarch64__)
-    return PLATFORM_ARMV8;
-#elif defined(__x86_64__)
-    return PLATFORM_X86_64;
+    return PLATFORM_ARMV7;
 #else
+    /* For host builds (x86_64), return stub */
     return PLATFORM_ARMV7;
 #endif
 }

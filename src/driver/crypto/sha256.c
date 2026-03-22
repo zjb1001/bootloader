@@ -23,7 +23,7 @@ static const uint32_t k[64] = {
     0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
     0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
     0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-    0x748f82ae, 0x78a5636f, 0x84c87814, 0x8cc70208,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
     0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
@@ -74,9 +74,12 @@ static void sha256_transform(sha256_ctx_t *ctx, const uint8_t block[64])
     uint32_t t1, t2;
     int i;
 
-    /* Prepare message schedule */
+    /* Prepare message schedule (byte-by-byte to avoid alignment issues) */
     for (i = 0; i < 16; i++) {
-        w[i] = be32_to_cpu(((uint32_t *)block)[i]);
+        w[i] = ((uint32_t)block[4*i] << 24) |
+               ((uint32_t)block[4*i + 1] << 16) |
+               ((uint32_t)block[4*i + 2] << 8)  |
+               ((uint32_t)block[4*i + 3]);
     }
     for (i = 16; i < 64; i++) {
         w[i] = SIG1(w[i - 2]) + w[i - 7] + SIG0(w[i - 15]) + w[i - 16];
@@ -166,32 +169,40 @@ void driver_sha256_final(sha256_ctx_t *ctx, uint8_t digest[32])
 {
     uint32_t i, idx;
     uint8_t bits[8];
-    uint8_t pad;
 
-    /* Save bit count */
-    for (i = 0; i < 8; i++) {
-        bits[i] = (ctx->count[i >> 2] >> ((3 - (i & 0x3)) * 8)) & 0xFF;
+    /* Save bit count (big-endian: high word first, then low word) */
+    for (i = 0; i < 4; i++) {
+        bits[i]     = (ctx->count[1] >> ((3 - i) * 8)) & 0xFF;
+        bits[4 + i] = (ctx->count[0] >> ((3 - i) * 8)) & 0xFF;
     }
 
-    /* Pad with 0x80 followed by zeros */
+    /* Current position in buffer */
     idx = (ctx->count[0] >> 3) & 0x3F;
-    pad = (idx < 56) ? (56 - idx) : (120 - idx);
-    for (i = 0; i < pad; i++) {
-        ctx->buffer[idx + i] = (i == 0) ? 0x80 : 0;
+
+    /* Append 0x80 padding byte */
+    ctx->buffer[idx++] = 0x80;
+
+    if (idx > 56) {
+        /* Not enough room for length in current block - pad and process */
+        while (idx < 64) {
+            ctx->buffer[idx++] = 0;
+        }
+        sha256_transform(ctx, ctx->buffer);
+        idx = 0;
+    }
+
+    /* Pad remaining with zeros up to length field */
+    while (idx < 56) {
+        ctx->buffer[idx++] = 0;
     }
 
     /* Append length */
     for (i = 0; i < 8; i++) {
-        ctx->buffer[idx + pad + i] = bits[i];
+        ctx->buffer[56 + i] = bits[i];
     }
 
-    /* Process final block(s) */
+    /* Process final block */
     sha256_transform(ctx, ctx->buffer);
-
-    if (pad + 8 == 64) {
-        /* Additional transform if we just filled a block */
-        sha256_transform(ctx, ctx->buffer + 64);
-    }
 
     /* Output digest (big-endian) */
     for (i = 0; i < 32; i++) {

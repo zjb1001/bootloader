@@ -52,7 +52,9 @@ void core_boot_kernel(const boot_params_t *params)
     if (!params) {
         /* Halt if invalid params */
         for (;;) {
+#if defined(__arm__) || defined(__aarch64__)
             __asm__ volatile("wfi");
+#endif
         }
     }
 
@@ -72,11 +74,12 @@ void core_boot_kernel(const boot_params_t *params)
     /* Setup kernel arguments */
     uint32_t r0 = 0;              /* Normally machine type */
     uint32_t r1 = params->dtb_addr;  /* DTB address */
-    uint32_t r2 = params->bootargs ? (uint32_t)params->bootargs : 0;  /* ATAGS/DTB */
+    uint32_t r2 = params->bootargs ? (uintptr_t)params->bootargs : 0;  /* ATAGS/DTB */
 
     /* Jump to kernel */
     uint32_t kernel_entry = params->kernel_addr;
 
+#if defined(__arm__)
     __asm__ volatile (
         "mov r0, %0\n"
         "mov r1, %1\n"
@@ -86,10 +89,16 @@ void core_boot_kernel(const boot_params_t *params)
         : "r"(r0), "r"(r1), "r"(r2), "r"(kernel_entry)
         : "r0", "r1", "r2"
     );
+#else
+    /* Host build stub - cannot execute ARM assembly */
+    (void)r0; (void)r1; (void)r2; (void)kernel_entry;
+#endif
 
     /* Should never return */
     for (;;) {
+#if defined(__arm__) || defined(__aarch64__)
         __asm__ volatile("wfi");
+#endif
     }
 }
 

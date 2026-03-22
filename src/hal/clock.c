@@ -44,7 +44,7 @@ static uint32_t s_apb_freq = 200;     /* MHz */
 static uint32_t s_dram_freq = 400;    /* MHz */
 
 /* Volatile register access macros */
-#define REG32(addr)      (*(volatile uint32_t *)(addr))
+#define REG32(addr)      (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /**
  * Wait for PLL to lock with timeout

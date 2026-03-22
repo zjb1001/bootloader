@@ -2,6 +2,7 @@
  * @file string.c
  * @brief Minimal string/memory utilities (no libc dependency)
  */
+#include "utils/string.h"
 #include "types.h"
 
 void *bl_memcpy(void *dst, const void *src, size_t n)
@@ -59,4 +60,36 @@ char *bl_strncpy(char *dst, const char *src, size_t n)
         dst[i] = '\0';
     }
     return dst;
+}
+
+char *bl_strcat(char *dst, const char *src, size_t maxlen)
+{
+    size_t dlen = bl_strlen(dst);
+    size_t i;
+    for (i = 0; src[i] && (dlen + i + 1) < maxlen; i++) {
+        dst[dlen + i] = src[i];
+    }
+    dst[dlen + i] = '\0';
+    return dst;
+}
+
+/* Standard C library names for bare-metal builds (-nostdlib) */
+void *memcpy(void *dst, const void *src, size_t n)
+{
+    return bl_memcpy(dst, src, n);
+}
+
+void *memset(void *s, int c, size_t n)
+{
+    return bl_memset(s, c, n);
+}
+
+int memcmp(const void *s1, const void *s2, size_t n)
+{
+    return bl_memcmp(s1, s2, n);
+}
+
+size_t strlen(const char *s)
+{
+    return bl_strlen(s);
 }

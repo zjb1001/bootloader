@@ -55,8 +55,8 @@ int32_t bl_div_s32(int32_t dividend, int32_t divisor)
     if (dividend == 0) return 0;
     if (dividend == INT32_MIN && divisor == -1) return INT32_MIN;  /* Overflow */
 
-    uint32_t dividend_abs = (dividend < 0) ? -(uint32_t)dividend : dividend;
-    uint32_t divisor_abs = (divisor < 0) ? -(uint32_t)divisor : divisor;
+    uint32_t dividend_abs = (dividend < 0) ? (uint32_t)(-(dividend + 1)) + 1u : (uint32_t)dividend;
+    uint32_t divisor_abs = (divisor < 0) ? (uint32_t)(-(divisor + 1)) + 1u : (uint32_t)divisor;
     uint32_t quotient_abs = dividend_abs / divisor_abs;
 
     /* Apply sign */

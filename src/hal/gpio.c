@@ -25,7 +25,7 @@
 #define GPIO_DRV_OFFSET   0x14   /* Drive level */
 #define GPIO_PULL_OFFSET  0x18   /* Pull up/down */
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /* Maximum number of pins per port */
 #define PINS_PER_PORT  32
@@ -79,7 +79,7 @@ int hal_gpio_init(uint32_t pin, gpio_mode_t mode, gpio_pull_t pull)
     ret = gpio_decode_pin(pin, &base, &bit);
     if (ret < 0) return ret;
 
-    volatile uint32_t *cfg_reg = (volatile uint32_t *)(base + GPIO_CFG_OFFSET + (bit / 8) * 4);
+    volatile uint32_t *cfg_reg = (volatile uint32_t *)(uintptr_t)(base + GPIO_CFG_OFFSET + (bit / 8) * 4);
     uint32_t shift = (bit % 8) * 4;
     uint32_t mask = 0xF << shift;
     uint32_t cfg_val;
@@ -104,7 +104,7 @@ int hal_gpio_init(uint32_t pin, gpio_mode_t mode, gpio_pull_t pull)
     *cfg_reg = reg_val;
 
     /* Set pull up/down */
-    volatile uint32_t *pull_reg = (volatile uint32_t *)(base + GPIO_PULL_OFFSET + (bit / 16) * 4);
+    volatile uint32_t *pull_reg = (volatile uint32_t *)(uintptr_t)(base + GPIO_PULL_OFFSET + (bit / 16) * 4);
     shift = (bit % 16) * 2;
     mask = 0x3 << shift;
 
@@ -134,7 +134,7 @@ int hal_gpio_set(uint32_t pin, uint8_t value)
     ret = gpio_decode_pin(pin, &base, &bit);
     if (ret < 0) return ret;
 
-    volatile uint32_t *data_reg = (volatile uint32_t *)(base + GPIO_DATA_OFFSET);
+    volatile uint32_t *data_reg = (volatile uint32_t *)(uintptr_t)(base + GPIO_DATA_OFFSET);
 
     if (value) {
         *data_reg |= (1u << bit);
@@ -156,7 +156,7 @@ int hal_gpio_get(uint32_t pin)
     ret = gpio_decode_pin(pin, &base, &bit);
     if (ret < 0) return ret;
 
-    volatile uint32_t *data_reg = (volatile uint32_t *)(base + GPIO_DATA_OFFSET);
+    volatile uint32_t *data_reg = (volatile uint32_t *)(uintptr_t)(base + GPIO_DATA_OFFSET);
 
     return (*data_reg >> bit) & 1;
 }
@@ -174,7 +174,7 @@ int hal_gpio_set_alt_func(uint32_t pin, uint32_t func)
 
     if (func > 7) return E_INVAL;
 
-    volatile uint32_t *cfg_reg = (volatile uint32_t *)(base + GPIO_CFG_OFFSET + (bit / 8) * 4);
+    volatile uint32_t *cfg_reg = (volatile uint32_t *)(uintptr_t)(base + GPIO_CFG_OFFSET + (bit / 8) * 4);
     uint32_t shift = (bit % 8) * 4;
     uint32_t mask = 0xF << shift;
 

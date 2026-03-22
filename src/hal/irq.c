@@ -9,7 +9,7 @@
 #include "errno.h"
 #include "types.h"
 
-#define MAX_IRQS  1024
+#define MAX_IRQS  256
 
 /* GIC register base addresses (platform specific) */
 #define GIC_DIST_BASE    0x01C81000u  /* Distributor */
@@ -33,7 +33,7 @@
 #define GICC_RPR         0x0014  /* Running Priority Register */
 #define GICC_HPPIR       0x0018  /* Highest Priority Pending Interrupt Register */
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /* IRQ handler table */
 static struct {
@@ -48,14 +48,22 @@ static uint32_t s_max_irq = 0;
 static inline uint32_t irq_save(void)
 {
     uint32_t cpsr;
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile ("mrs %0, cpsr" : "=r"(cpsr));
     __asm__ volatile ("cpsid i" ::: "memory");
+#else
+    cpsr = 0;
+#endif
     return cpsr;
 }
 
 static inline void irq_restore(uint32_t cpsr)
 {
+#if defined(__arm__) || defined(__aarch64__)
     __asm__ volatile ("msr cpsr_c, %0" :: "r"(cpsr) : "memory");
+#else
+    (void)cpsr;
+#endif
 }
 
 /**

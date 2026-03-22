@@ -4,6 +4,7 @@
  */
 #include "core/loader.h"
 #include "driver/flash.h"
+#include "driver/crc.h"
 #include "errno.h"
 #include "config.h"
 #include "utils/string.h"
@@ -53,13 +54,13 @@ int core_load_image(uint32_t flash_addr, image_header_t *header)
     uint32_t payload_size = raw_header.size;
     uint32_t data_offset = flash_addr + sizeof(raw_image_header_t);
 
-    ret = driver_flash_read(data_offset, (uint8_t *)header->load_addr, payload_size);
+    ret = driver_flash_read(data_offset, (uint8_t *)(uintptr_t)header->load_addr, payload_size);
     if (ret < 0) {
         return BOOT_ERR_IMAGE_LOAD;
     }
 
     /* Verify CRC */
-    uint32_t crc = driver_crc32((uint8_t *)header->load_addr, payload_size, 0);
+    uint32_t crc = driver_crc32((uint8_t *)(uintptr_t)header->load_addr, payload_size, 0);
     if (crc != raw_header.crc32) {
         return BOOT_ERR_IMAGE_CORRUPT;
     }
@@ -96,7 +97,7 @@ int core_load_dtb(uint32_t dtb_addr, uint32_t load_addr)
     }
 
     /* Read entire DTB */
-    ret = driver_flash_read(dtb_addr, (uint8_t *)load_addr, size);
+    ret = driver_flash_read(dtb_addr, (uint8_t *)(uintptr_t)load_addr, size);
     if (ret < 0) {
         return BOOT_ERR_IMAGE_LOAD;
     }

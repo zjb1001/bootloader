@@ -42,6 +42,12 @@ static int itoa_str(uint32_t value, char *str, int base, int is_signed)
 {
     char tmp[16];
     int i = 0, j = 0;
+
+    if (base < 2 || base > 16) {
+        str[0] = '\0';
+        return 0;
+    }
+
     int32_t signed_value = (int32_t)value;
 
     if (is_signed && signed_value < 0) {
@@ -202,11 +208,11 @@ void bl_log(log_level_t level, const char *fmt, ...)
     va_end(ap);
 
     len += msg_len;
-    if (len < (int)sizeof(log_buf) - 1) {
+    if (len < (int)sizeof(log_buf) - 2) {
         log_buf[len++] = '\r';
         log_buf[len++] = '\n';
-        log_buf[len] = '\0';
     }
+    log_buf[len] = '\0';
 
     /* Output to UART if initialized */
     extern int hal_uart_write(uint32_t, const uint8_t *, uint32_t);

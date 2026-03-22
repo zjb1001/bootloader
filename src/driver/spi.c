@@ -58,7 +58,7 @@
 #define SPI_STAT_RX_EMPTY   (1u << 4)   /* RX FIFO empty */
 #define SPI_STAT_RX_FULL    (1u << 5)   /* RX FIFO full */
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /* Get SPI base address */
 static inline uint32_t spi_get_base(uint32_t spi_id)

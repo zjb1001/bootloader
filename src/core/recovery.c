@@ -4,6 +4,8 @@
  */
 #include "core/recovery.h"
 #include "driver/console.h"
+#include "driver/watchdog.h"
+#include "utils/string.h"
 #include "core/partition.h"
 #include "core/loader.h"
 #include "core/verify.h"

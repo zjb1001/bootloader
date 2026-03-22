@@ -18,6 +18,7 @@
 #include "hal/timer.h"
 #include "driver/watchdog.h"
 #include "driver/flash.h"
+#include "driver/crc.h"
 #include "driver/console.h"
 #include "core/verify.h"
 #include "core/loader.h"
@@ -134,7 +135,7 @@ int boot_stage3_selftest(void)
 
     /* Clock verification */
     int core_clk = hal_clock_get_freq(CLOCK_PLL_CORE);
-    if (core_clk < MIN_DRAM_SPEED_MHZ) {
+    if (core_clk < (int)MIN_DRAM_SPEED_MHZ) {
         console_puts("Warning: Core clock below minimum\n");
     }
 
@@ -241,7 +242,7 @@ int boot_stage5_start_kernel(void)
     driver_watchdog_disable();
 
     /* Disable interrupts */
-    uint32_t irq_state = hal_irq_disable_all();
+    (void)hal_irq_disable_all();
 
     /* Flush caches */
     hal_cache_flush(0);
@@ -312,7 +313,9 @@ int boot_main(void)
     /* Should not reach here */
     console_puts("ERROR: Returned from kernel jump\n");
     for (;;) {
+#if defined(__arm__) || defined(__aarch64__)
         __asm__ volatile("wfi");
+#endif
     }
 
     return rc;

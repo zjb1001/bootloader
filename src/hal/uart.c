@@ -49,7 +49,7 @@
 #define INT_RX      (1u << 4)  /* RX interrupt */
 #define INT_TX      (1u << 5)  /* TX interrupt */
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /* Convert physical UART ID to base address */
 static inline uint32_t uart_get_base(uint32_t uart_id)

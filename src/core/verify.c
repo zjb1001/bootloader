@@ -8,6 +8,7 @@
 #include "driver/rsa.h"
 #include "driver/ecdsa.h"
 #include "driver/flash.h"
+#include "config.h"
 #include "errno.h"
 
 /* Minimum allowed security version (from OTP or config) */
@@ -31,14 +32,14 @@ int core_verify_image(const image_t *image)
 
     if (image->addr >= FLASH_XIP_BASE) {
         /* Allocate buffer for image data */
-        data_buf = (uint8_t *)DRAM_BASE + 0x1000000;  /* Use DRAM */
+        data_buf = (uint8_t *)(uintptr_t)(DRAM_BASE + 0x1000000);  /* Use DRAM */
         ret = driver_flash_read(image->addr - FLASH_XIP_BASE, data_buf, image->size);
         if (ret < 0) {
             return E_IO;
         }
         data_ptr = data_buf;
     } else {
-        data_ptr = (uint8_t *)image->addr;
+        data_ptr = (uint8_t *)(uintptr_t)image->addr;
     }
 
     /* Stage 1: CRC32 (fast check) */
@@ -47,7 +48,6 @@ int core_verify_image(const image_t *image)
         if (crc != image->verify_data->crc32) {
             return BOOT_ERR_CRC_MISMATCH;
         }
-        passed |= VERIFY_CRC32;
     }
 
     /* Stage 2: CRC64 (optional) */
@@ -56,7 +56,6 @@ int core_verify_image(const image_t *image)
         if (crc != image->verify_data->crc64) {
             return BOOT_ERR_CRC_MISMATCH;
         }
-        passed |= VERIFY_CRC64;
     }
 
     /* Stage 3: SHA256 */
@@ -75,7 +74,6 @@ int core_verify_image(const image_t *image)
         if (!match) {
             return BOOT_ERR_HASH_MISMATCH;
         }
-        passed |= VERIFY_SHA256;
     }
 
     /* Stage 4: Digital signature */
@@ -106,9 +104,9 @@ int core_verify_image(const image_t *image)
         if (ret < 0) {
             return BOOT_ERR_VERSION_ROLLBACK;
         }
-        passed |= VERIFY_VERSION;
     }
 
+    (void)passed;  /* Reserved for future audit logging */
     return E_OK;
 }
 

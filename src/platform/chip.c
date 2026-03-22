@@ -11,7 +11,7 @@
 #define CHIP_ID_REG     (CHIP_ID_BASE + 0x0000)
 #define CHIP_CFG_REG    (CHIP_ID_BASE + 0x0004)
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /* Cached chip information */
 static chip_info_t s_chip_info = {0};

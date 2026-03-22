@@ -35,7 +35,7 @@
 #define WDT_MODE_EN     (1u << 0)   /* Enable watchdog */
 #define WDT_MODE_RST    (1u << 1)   /* Enable reset on timeout */
 
-#define REG32(addr) (*(volatile uint32_t *)(addr))
+#define REG32(addr) (*(volatile uint32_t *)(uintptr_t)(addr))
 
 /* Cached timeout value */
 static uint32_t s_timeout_ms = 0;
