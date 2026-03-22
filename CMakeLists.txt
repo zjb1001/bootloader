@@ -71,6 +71,8 @@ if(NOT BUILD_TESTS)
         -Wl,-Map=${CMAKE_BINARY_DIR}/bootloader.map
     )
 
+    target_link_libraries(bootloader.elf PRIVATE gcc)
+
     # Generate raw binary
     add_custom_command(TARGET bootloader.elf POST_BUILD
         COMMAND ${CMAKE_OBJCOPY} -O binary

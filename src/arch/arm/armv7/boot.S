@@ -27,8 +27,18 @@ _start:
     orr     r0, r0, #0x13       @ SVC mode
     msr     cpsr_c, r0
 
-    /* ── Invalidate I-cache & D-cache ── */
-    /* TODO: implement cache invalidation sequence */
+    /* ── Invalidate I-cache & TLB ── */
+    mov     r0, #0
+    mcr     p15, 0, r0, c7, c5, 0   @ ICIALLU - invalidate I-cache
+    mcr     p15, 0, r0, c8, c7, 0   @ TLBIALL - invalidate TLB
+    dsb
+    isb
+
+    /* ── Disable MMU and caches ── */
+    mrc     p15, 0, r0, c1, c0, 0   @ Read SCTLR
+    bic     r0, r0, #0x0005          @ Clear M and C bits
+    mcr     p15, 0, r0, c1, c0, 0   @ Write SCTLR
+    isb
 
     /* ── Set up stack ── */
     ldr     sp, =_stack_top
@@ -37,17 +47,15 @@ _start:
     ldr     r0, =_bss_start
     ldr     r1, =_bss_end
     mov     r2, #0
-.bss_loop:
     cmp     r0, r1
-    strlt   r2, [r0], #4
-    blt     .bss_loop
+1:  strlt   r2, [r0], #4
+    blt     1b
 
     /* ── Jump to C runtime init ── */
     bl      _crt0_init
 
     /* ── Should not return ── */
-.hang:
-    wfi
-    b       .hang
+2:  wfi
+    b       2b
 
     .size   _start, . - _start

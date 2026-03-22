@@ -15,7 +15,7 @@ MEMORY
 
 /* Stack at top of SRAM */
 _stack_top = ORIGIN(SRAM) + LENGTH(SRAM);
-_stack_size = 32K;
+_stack_size = 16K;
 
 SECTIONS
 {
@@ -55,13 +55,21 @@ SECTIONS
     .heap (NOLOAD) : ALIGN(4)
     {
         _heap_start = .;
-        . += 16K;
+        . += 4K;
         _heap_end = .;
     } > SRAM
 
     /* ─── Stack guard ─── */
-    ASSERT(_stack_top - _bss_end >= _stack_size,
+    ASSERT(_stack_top - _heap_end >= _stack_size,
            "ERROR: not enough SRAM for stack + BSS + heap")
+
+    /* ─── DRAM BSS (page tables, large buffers) ─── */
+    .dram_bss (NOLOAD) : ALIGN(16K)
+    {
+        _dram_bss_start = .;
+        *(.dram_bss .dram_bss.*)
+        _dram_bss_end = .;
+    } > DRAM
 
     /* ─── Discard ─── */
     /DISCARD/ :
